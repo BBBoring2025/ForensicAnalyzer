@@ -1478,21 +1478,7 @@
             }
         }
 
-        // Event Listeners
-        elements.imageInput.addEventListener('change', handleImageUpload);
-        elements.perfToggle.addEventListener('click', togglePerformanceMonitor);
-
-        // Algorithm button event listeners
-        elements.otsuBtn.addEventListener('click', () => runAnalysis('otsu'));
-        elements.kmeansBtn.addEventListener('click', () => runAnalysis('kmeans'));
-        elements.ssimBtn.addEventListener('click', () => runAnalysis('ssim'));
-        elements.claheBtn.addEventListener('click', () => runAnalysis('clahe'));
-        elements.advancedElaBtn.addEventListener('click', () => runAnalysis('advancedELA'));
-
-        // Header button event listeners
-        elements.generateReportBtn.addEventListener('click', generatePDFReport);
-        elements.signatureAnalysisBtn.addEventListener('click', openSignatureAnalysis);
-        elements.compareAllBtn.addEventListener('click', openComparison);
+        // Event Listeners will be added after DOM is fully loaded
 
         function handleImageUpload(event) {
             const file = event.target.files[0];
@@ -1931,10 +1917,55 @@
             alert('Karşılaştırma analizi başlatıldı!');
         }
 
-        // Initialize when page loads
+        // Initialize when page loads - Fixed version
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM yüklendi');
+            
+            // Önce UI initialize et
             initializeUI();
-            console.log('🚀 Forensic Analyzer v4.0 Standalone başlatıldı');
+            
+            // Event Listeners'ı güvenli şekilde ekle
+            setTimeout(() => {
+                console.log('🔧 Event listeners ekleniyor...');
+                
+                if (elements && elements.imageInput) {
+                    elements.imageInput.addEventListener('change', handleImageUpload);
+                    console.log('✅ Image input listener eklendi');
+                }
+                if (elements && elements.perfToggle) {
+                    elements.perfToggle.addEventListener('click', togglePerformanceMonitor);
+                }
+                
+                // Algorithm button event listeners
+                if (elements && elements.otsuBtn) {
+                    elements.otsuBtn.addEventListener('click', () => runAnalysis('otsu'));
+                }
+                if (elements && elements.kmeansBtn) {
+                    elements.kmeansBtn.addEventListener('click', () => runAnalysis('kmeans'));
+                }
+                if (elements && elements.ssimBtn) {
+                    elements.ssimBtn.addEventListener('click', () => runAnalysis('ssim'));
+                }
+                if (elements && elements.claheBtn) {
+                    elements.claheBtn.addEventListener('click', () => runAnalysis('clahe'));
+                }
+                if (elements && elements.advancedElaBtn) {
+                    elements.advancedElaBtn.addEventListener('click', () => runAnalysis('advancedELA'));
+                }
+                
+                // Header button event listeners  
+                if (elements && elements.generateReportBtn) {
+                    elements.generateReportBtn.addEventListener('click', generatePDFReport);
+                }
+                if (elements && elements.signatureAnalysisBtn) {
+                    elements.signatureAnalysisBtn.addEventListener('click', openSignatureAnalysis);
+                }
+                if (elements && elements.compareAllBtn) {
+                    elements.compareAllBtn.addEventListener('click', openComparison);
+                }
+                
+                console.log('🚀 Forensic Analyzer v4.0 Standalone başlatıldı - FIXED!');
+            }, 200);
         });
 
     </script>
