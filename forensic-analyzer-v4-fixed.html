@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔬 Gelişmiş Adli Belge Analizi Sistemi v4.0 - Fixed</title>
+    
+    <!-- jsPDF CDN - Önce yüklenmeli -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+    
+    <style>
+        /* Mevcut CSS kodlarınız buraya */
+        :root {
+            --primary-dark: #1e3c72;
+            --primary-light: #2a5298;
+            --accent-1: #667eea;
+            --accent-2: #764ba2;
+            /* ... diğer CSS variables */
+        }
+        
+        /* Basit test için minimal CSS */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+        }
+        
+        .upload-button {
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }        
+        .preset-button {
+            background: #764ba2;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            margin: 5px;
+            display: inline-block;
+        }
+        
+        #presetsGrid {
+            margin: 20px 0;
+        }
+        
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔬 Forensic Analyzer v4.0 - Debug Version</h1>
+    
+    <div>
+        <input type="file" id="imageInput" accept="image/*" style="display:none;">
+        <button class="upload-button" onclick="document.getElementById('imageInput').click()">
+            📁 Belge Yükle (Test)
+        </button>
+    </div>    
+    <div id="presetsGrid"></div>
+    
+    <div>
+        <canvas id="originalCanvas" width="400" height="300"></canvas>
+        <canvas id="processedCanvas" width="400" height="300"></canvas>
+    </div>
+    
+    <div id="status">Sistem yükleniyor...</div>
+    
+    <script>
+        console.log('🚀 Script başlatıldı');
+        
+        // Basit test versiyonu
+        const presets = [
+            { id: 'test1', name: 'VSC Combo', icon: '🎯' },
+            { id: 'test2', name: 'Temel Analiz', icon: '📊' },
+            { id: 'test3', name: 'Otsu Threshold', icon: '🔍' },
+            { id: 'test4', name: 'K-Means', icon: '🎨' }
+        ];
+        
+        function initializeSystem() {
+            console.log('🔧 Sistem başlatılıyor...');
+            
+            // Preset butonları oluştur
+            const presetsGrid = document.getElementById('presetsGrid');
+            if (presetsGrid) {
+                presets.forEach(preset => {
+                    const button = document.createElement('button');
+                    button.className = 'preset-button';
+                    button.innerHTML = `${preset.icon} ${preset.name}`;                    button.onclick = () => testAnalysis(preset.id);
+                    presetsGrid.appendChild(button);
+                });
+                console.log('✅ Preset butonları oluşturuldu');
+            }
+            
+            // File input event listener
+            const imageInput = document.getElementById('imageInput');
+            if (imageInput) {
+                imageInput.addEventListener('change', handleFileUpload);
+                console.log('✅ File input listener eklendi');
+            }
+            
+            // jsPDF kontrolü
+            if (typeof window.jspdf !== 'undefined') {
+                console.log('✅ jsPDF yüklendi');
+            } else {
+                console.warn('⚠️ jsPDF yüklenmedi');
+            }
+            
+            document.getElementById('status').textContent = '✅ Sistem hazır - Test versiyonu';
+        }
+        
+        function handleFileUpload(event) {
+            console.log('📁 Dosya seçildi:', event.target.files[0]);
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    console.log('✅ Dosya okundu');
+                    displayImage(e.target.result);                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function displayImage(src) {
+            const canvas = document.getElementById('originalCanvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, 400, 300);
+                console.log('✅ Görüntü çizildi');
+            };
+            img.src = src;
+        }
+        
+        function testAnalysis(presetId) {
+            console.log('🧬 Analiz başlatıldı:', presetId);
+            alert(`${presetId} analizi test modunda çalışıyor!`);
+        }
+        
+        // DOM yüklendiğinde sistemi başlat
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM yüklendi');
+            setTimeout(initializeSystem, 100);
+        });
+        
+        // Debug için global erişim
+        window.testSystem = function() {
+            console.log('🔍 Sistem durumu:', {
+                presetsGrid: !!document.getElementById('presetsGrid'),
+                imageInput: !!document.getElementById('imageInput'),
+                jsPDF: typeof window.jspdf !== 'undefined'
+            });
+        };
+    </script>
+</body>
+</html>
