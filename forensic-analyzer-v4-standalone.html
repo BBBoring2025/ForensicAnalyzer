@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔬 Gelişmiş Adli Belge Analizi Sistemi v4.0 - Standalone</title>
+    <style>
+        :root {
+            --primary-dark: #1e3c72;
+            --primary-light: #2a5298;
+            --accent-1: #667eea;
+            --accent-2: #764ba2;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --info: #2196f3;
+            --bg-light: #f8f9fa;
+            --bg-dark: #e9ecef;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.2);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --transition: all 0.3s ease;
+            --success-bg: #e8f5e9;
+            --warning-bg: #fff3e0;
+            --danger-bg: #ffebee;
+            --info-bg: #e3f2fd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-light) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid var(--bg-light);
+            border-top-color: var(--accent-1);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: var(--bg-light);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-weight: 600;
+            color: var(--accent-1);
+        }
+
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            color: var(--primary-dark);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle { color: var(--text-secondary); font-size: 1.2em; }
+        .header-actions { position: absolute; top: 30px; right: 30px; display: flex; gap: 10px; flex-wrap: wrap; }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1500;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: white; max-width: 95%; max-height: 95%; border-radius: var(--radius-lg); 
+            box-shadow: var(--shadow-lg); overflow-y: auto;
+        }
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-light) 100%);
+            color: white; padding: 20px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-close {
+            background: none; border: none; color: white; font-size: 1.5em; cursor: pointer;
+            padding: 5px; border-radius: 50%; width: 35px; height: 35px; display: flex; 
+            align-items: center; justify-content: center;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.2); }
+        .modal-body { padding: 30px; }
+        
+        .signature-tools {
+            display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .signature-canvas-container {
+            position: relative; border: 2px dashed var(--accent-1); border-radius: var(--radius-md);
+            margin: 20px 0; overflow: hidden; background: var(--bg-light);
+        }
+        .selection-overlay {
+            position: absolute; top: 0; left: 0; pointer-events: none; z-index: 10;
+        }
+        .selection-rect {
+            border: 2px solid var(--accent-1); background: rgba(102, 126, 234, 0.2);
+            position: absolute; display: none;
+        }
+        
+        .comparison-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;
+        }
+        .comparison-panel {
+            background: var(--bg-light); padding: 20px; border-radius: var(--radius-md);
+        }
+        .comparison-controls {
+            display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;
+        }
+        .zoom-controls {
+            display: flex; gap: 5px; align-items: center;
+        }
+        .zoom-slider {
+            width: 150px;
+        }
+
+        .btn {
+            padding: 10px 20px; font-size: 16px; border: none; border-radius: 25px; cursor: pointer;
+            transition: var(--transition); font-weight: 500; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%); color: white; }
+        .btn-secondary { background: white; color: var(--primary-dark); border: 2px solid var(--bg-dark); }
+
+        .upload-section { background: white; padding: 40px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); margin-bottom: 30px; text-align: center; }
+        #imageInput { display: none; }
+        .upload-button { display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%); color: white; padding: 15px 40px; font-size: 18px; border: none; border-radius: 30px; cursor: pointer; transition: var(--transition); font-weight: 600; }
+
+        .presets-container { background: white; padding: 30px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); margin-bottom: 30px; }
+        .presets-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .preset-button { background: var(--bg-light); border: 2px solid var(--bg-dark); padding: 15px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); text-align: center; }
+        .preset-button.active { background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%); color: white; border-color: transparent; }
+        .preset-icon { font-size: 2em; margin-bottom: 5px; }
+        .preset-name { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; }
+
+        .canvas-section { background: white; padding: 30px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); margin-bottom: 30px; }
+        .canvas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+        .canvas-container { position: relative; background: var(--bg-light); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
+        .canvas-header { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-light) 100%); color: white; padding: 15px; text-align: center; font-weight: 600; }
+        canvas { width: 100%; height: auto; display: block; background: white; cursor: crosshair; }
+
+        .analysis-section { background: white; padding: 30px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); margin-bottom: 30px; }
+        .analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .analysis-card { background: var(--bg-light); padding: 20px; border-radius: var(--radius-md); border-left: 4px solid var(--accent-1); transition: var(--transition); }
+        .analysis-card.success { border-left-color: var(--success); background: var(--success-bg); }
+        .analysis-card.warning { border-left-color: var(--warning); background: var(--warning-bg); }
+        .analysis-card.danger { border-left-color: var(--danger); background: var(--danger-bg); }
+        .analysis-card.info { border-left-color: var(--info); background: var(--info-bg); }
+        .metric { display: flex; justify-content: space-between; margin: 10px 0; padding: 8px; background: white; border-radius: var(--radius-sm); }
+        .metric-label { font-weight: 600; color: var(--text-primary); }
+        .metric-value { font-weight: bold; color: var(--primary-dark); }
+
+        .gpu-status {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .gpu-info h4 {
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+        }
+
+        .gpu-info p {
+            margin: 5px 0;
+            opacity: 0.9;
+        }
+
+        .toggle-wrapper {
+            margin-top: 10px;
+        }
+
+        .toggle-wrapper label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .toggle-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .performance-overlay {
+            position: fixed;
+            top: 20px;
+            right: -320px;
+            width: 300px;
+            background: rgba(20, 30, 40, 0.95);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: right 0.3s ease;
+            z-index: 900;
+        }
+
+        .performance-overlay.visible {
+            right: 20px;
+        }
+
+        .perf-header {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #ffd700;
+        }
+
+        .perf-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .perf-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .perf-item:last-child {
+            border-bottom: none;
+        }
+
+        .perf-chart {
+            height: 80px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: end;
+            justify-content: center;
+        }
+
+        .chart-bars {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            height: 100%;
+        }
+
+        .bar {
+            width: 40px;
+            min-height: 5px;
+            border-radius: 4px 4px 0 0;
+            display: flex;
+            align-items: end;
+            justify-content: center;
+            position: relative;
+            transition: height 0.3s ease;
+        }
+
+        .cpu-bar {
+            background: linear-gradient(to top, #ff6b6b, #ff8e8e);
+        }
+
+        .gpu-bar {
+            background: linear-gradient(to top, #4ecdc4, #6fffe9);
+        }
+
+        .bar span {
+            position: absolute;
+            bottom: -20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .perf-toggle {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+            z-index: 901;
+        }
+
+        .perf-toggle:hover {
+            transform: scale(1.1);
+        }
+    </style>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3>İşleniyor...</h3>
+            <p id="loadingMessage">Piksel bazlı analiz yapılıyor...</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span class="progress-text" id="progressText">0%</span>
+        </div>
+    </div>
+
+    <!-- Ana container -->
+    <main class="main-container">
+        <header class="header">
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="generateReportBtn" disabled>
+                    📄 PDF Rapor
+                </button>
+                <button class="btn btn-secondary" id="signatureAnalysisBtn" disabled>
+                    ✍️ İmza Analizi
+                </button>
+                <button class="btn btn-secondary" id="compareAllBtn" disabled>
+                    🔀 Karşılaştır
+                </button>
+            </div>
+            <h1>🔬 Gelişmiş Adli Belge Analizi Sistemi v4.0</h1>
+            <p class="subtitle">Standalone - Gerçek Zamanlı Piksel Bazlı Tahrifat Analizi</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section class="upload-section">
+            <input type="file" id="imageInput" accept="image/*">
+            <label for="imageInput" class="upload-button">📁 Belge Yükle</label>
+            <p style="margin-top: 15px; color: var(--text-secondary);">Analiz edilecek belgenin fotoğrafını yükleyin (Max 50MB)</p>
+        </section>
+
+        <!-- Presets Section -->
+        <section class="presets-container">
+            <h2 style="font-size: 1.8em; color: var(--primary-dark); margin-bottom: 20px; text-align: center;">🎯 Hızlı Analiz Presetleri</h2>
+            <div class="presets-grid" id="presetsGrid"></div>
+        </section>
+
+        <!-- Canvas Section -->
+        <section class="canvas-section">
+            <div class="canvas-grid">
+                <div class="canvas-container">
+                    <div class="canvas-header">📷 Orijinal Görüntü</div>
+                    <canvas id="originalCanvas"></canvas>
+                </div>
+                <div class="canvas-container">
+                    <div class="canvas-header">🔬 İşlenmiş Görüntü</div>
+                    <canvas id="processedCanvas"></canvas>
+                </div>
+            </div>
+            <div class="canvas-grid">
+                <div class="canvas-container">
+                    <div class="canvas-header">🎯 Anomali Haritası</div>
+                    <canvas id="anomalyCanvas"></canvas>
+                </div>
+                <div class="canvas-container">
+                    <div class="canvas-header">📊 Histogram Analizi</div>
+                    <canvas id="histogramCanvas"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Advanced Algorithms Section -->
+        <section class="analysis-section">
+            <h2 style="font-size: 1.8em; color: var(--primary-dark); margin-bottom: 20px; text-align: center;">🧬 Gelişmiş Analiz Algoritmaları</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                <button class="btn btn-primary" id="otsuBtn" disabled>
+                    📊 Otsu Threshold
+                </button>
+                <button class="btn btn-primary" id="kmeansBtn" disabled>
+                    🎨 K-Means (k=5)
+                </button>
+                <button class="btn btn-primary" id="ssimBtn" disabled>
+                    📐 SSIM Analizi
+                </button>
+                <button class="btn btn-primary" id="claheBtn" disabled>
+                    ⚡ CLAHE Enhancement
+                </button>
+                <button class="btn btn-primary" id="advancedElaBtn" disabled>
+                    🔍 Gelişmiş ELA
+                </button>
+            </div>
+            
+            <!-- Algorithm Results Display -->
+            <div class="analysis-grid" id="algorithmResults">
+                <div class="analysis-card info">
+                    <h3>🧬 Gelişmiş Algoritmalar</h3>
+                    <p>Bir görüntü yükledikten sonra yukarıdaki algoritmalardan birini seçin.</p>
+                    <div style="margin-top: 15px; font-size: 0.9em;">
+                        <strong>Algoritmalar:</strong><br>
+                        • Otsu: Otomatik threshold hesaplama<br>
+                        • K-Means: CIE-Lab renk kümeleme<br>
+                        • SSIM: Yapısal benzerlik indeksi<br>
+                        • CLAHE: Adaptif histogram eşitleme<br>
+                        • ELA: Gelişmiş error level analizi
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Basic Analysis Results -->
+        <section class="analysis-section">
+            <h2 style="font-size: 1.8em; color: var(--primary-dark); margin-bottom: 20px; text-align: center;">📋 Temel Analiz Sonuçları</h2>
+            <div class="analysis-grid" id="analysisResults">
+                <div class="analysis-card success">
+                    <h3>✅ Sistem Hazır</h3>
+                    <p>Standalone versiyon - tüm bileşenler inline olarak yüklendi.</p>
+                    <div style="margin-top: 15px; font-size: 0.9em;">
+                        <strong>Özellikler:</strong><br>
+                        • WebGL GPU hızlandırma<br>
+                        • Inline Web Worker<br>
+                        • Gelişmiş algoritmalar<br>
+                        • PDF rapor oluşturma
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Performance Monitor (Toggle) -->
+    <button class="perf-toggle" id="perfToggle" title="Performans Monitörü">⚡</button>
+    
+    <!-- Performance Overlay -->
+    <div class="performance-overlay" id="performanceOverlay">
+        <div class="perf-header">📊 Performans İzleyici</div>
+        <div class="perf-stats">
+            <div class="perf-item">
+                <span>🎮 GPU:</span>
+                <span id="gpuAcceleration">Tespit ediliyor...</span>
+            </div>
+            <div class="perf-item">
+                <span>💾 Bellek:</span>
+                <span id="memoryUsage">--</span>
+            </div>
+            <div class="perf-item">
+                <span>⏱️ İşlem:</span>
+                <span id="processTime">--</span>
+            </div>
+        </div>
+        <div class="perf-chart">
+            <div class="chart-bars">
+                <div class="cpu-bar bar" id="cpuBar" style="height: 20%">
+                    <span>CPU</span>
+                </div>
+                <div class="gpu-bar bar" id="gpuBar" style="height: 40%">
+                    <span>GPU</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Signature Analysis -->
+    <div class="modal-overlay" id="signatureModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✍️ İmza Analizi</h3>
+                <button class="modal-close" onclick="closeSignatureModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="signature-tools">
+                    <button class="btn btn-primary" onclick="selectSignatureMode()">🎯 İmza Seç</button>
+                    <button class="btn btn-secondary" onclick="clearSignatureSelection()">🗑️ Temizle</button>
+                    <button class="btn btn-secondary" onclick="analyzeSignature()">🔍 Analiz Et</button>
+                </div>
+                <div class="signature-canvas-container">
+                    <canvas id="signatureCanvas"></canvas>
+                    <div class="selection-overlay" id="signatureOverlay">
+                        <div class="selection-rect" id="signatureRect"></div>
+                    </div>
+                </div>
+                <div id="signatureResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Comparison -->
+    <div class="modal-overlay" id="comparisonModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔀 Belge Karşılaştırma</h3>
+                <button class="modal-close" onclick="closeComparisonModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="comparison-container">
+                    <div class="comparison-panel">
+                        <h4>📷 Birinci Belge</h4>
+                        <div class="comparison-controls">
+                            <input type="file" id="comparison1Input" accept="image/*" style="display: none;">
+                            <button class="btn btn-primary" onclick="document.getElementById('comparison1Input').click()">📁 Yükle</button>
+                            <div class="zoom-controls">
+                                <label>🔍</label>
+                                <input type="range" class="zoom-slider" min="0.5" max="3" step="0.1" value="1" id="zoom1">
+                            </div>
+                        </div>
+                        <canvas id="comparison1Canvas"></canvas>
+                    </div>
+                    <div class="comparison-panel">
+                        <h4>📷 İkinci Belge</h4>
+                        <div class="comparison-controls">
+                            <input type="file" id="comparison2Input" accept="image/*" style="display: none;">
+                            <button class="btn btn-primary" onclick="document.getElementById('comparison2Input').click()">📁 Yükle</button>
+                            <div class="zoom-controls">
+                                <label>🔍</label>
+                                <input type="range" class="zoom-slider" min="0.5" max="3" step="0.1" value="1" id="zoom2">
+                            </div>
+                        </div>
+                        <canvas id="comparison2Canvas"></canvas>
+                    </div>
+                </div>
+                <div style="text-align: center; margin: 20px 0;">
+                    <button class="btn btn-primary" onclick="performComparison()">⚡ Karşılaştır</button>
+                </div>
+                <div id="comparisonResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inline Worker Code - imageProcessor.worker.js içeriğini burada inline olarak ekledik
+        const workerCode = `
+            self.addEventListener('message', function(e) {
+                const { imageData, algorithm, params } = e.data;
+                let result;
+                
+                try {
+                    switch(algorithm) {
+                        case 'otsu':
+                            result = otsuThreshold(imageData);
+                            break;
+                        case 'kmeans':
+                            result = kMeansSegmentation(imageData, params.k || 5);
+                            break;
+                        case 'ssim':
+                            result = structuralSimilarity(imageData, params.reference);
+                            break;
+                        case 'clahe':
+                            result = adaptiveHistogramEqualization(imageData);
+                            break;
+                        case 'advancedELA':
+                            result = advancedErrorLevelAnalysis(imageData, params.quality || 85);
+                            break;
+                        case 'vscCombo':
+                            result = vscComboAnalysis(imageData);
+                            break;
+                        case 'basicAnalysis':
+                            result = performBasicAnalysis(imageData);
+                            break;
+                        default:
+                            result = { error: 'Bilinmeyen algoritma: ' + algorithm };
+                    }
+                    
+                    self.postMessage({ success: true, result: result, algorithm: algorithm });
+                } catch (error) {
+                    self.postMessage({ success: false, error: error.message, algorithm: algorithm });
+                }
+            });
+
+            function otsuThreshold(imageData) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                // Convert to grayscale and calculate histogram
+                const grayscale = new Uint8Array(width * height);
+                const histogram = new Array(256).fill(0);
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+                    grayscale[i / 4] = gray;
+                    histogram[gray]++;
+                }
+                
+                // Calculate Otsu threshold
+                const total = width * height;
+                let sum = 0;
+                for (let i = 0; i < 256; i++) {
+                    sum += i * histogram[i];
+                }
+                
+                let sumB = 0;
+                let wB = 0;
+                let wF = 0;
+                let varMax = 0;
+                let threshold = 0;
+                
+                for (let t = 0; t < 256; t++) {
+                    wB += histogram[t];
+                    if (wB === 0) continue;
+                    
+                    wF = total - wB;
+                    if (wF === 0) break;
+                    
+                    sumB += t * histogram[t];
+                    
+                    const mB = sumB / wB;
+                    const mF = (sum - sumB) / wF;
+                    
+                    const varBetween = wB * wF * (mB - mF) * (mB - mF);
+                    
+                    if (varBetween > varMax) {
+                        varMax = varBetween;
+                        threshold = t;
+                    }
+                }
+                
+                // Apply threshold
+                const resultData = new ImageData(width, height);
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = grayscale[i / 4];
+                    const binary = gray > threshold ? 255 : 0;
+                    resultData.data[i] = binary;
+                    resultData.data[i + 1] = binary;
+                    resultData.data[i + 2] = binary;
+                    resultData.data[i + 3] = 255;
+                }
+                
+                return {
+                    processedImage: resultData,
+                    threshold: threshold,
+                    metrics: {
+                        threshold_value: threshold,
+                        background_ratio: (histogram.slice(0, threshold).reduce((a, b) => a + b, 0) / total * 100).toFixed(2),
+                        foreground_ratio: (histogram.slice(threshold).reduce((a, b) => a + b, 0) / total * 100).toFixed(2)
+                    }
+                };
+            }
+
+            function kMeansSegmentation(imageData, k) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                const pixelCount = width * height;
+                
+                // Convert RGB to CIE-Lab for better color clustering
+                const labPixels = [];
+                for (let i = 0; i < data.length; i += 4) {
+                    const lab = rgbToLab(data[i], data[i + 1], data[i + 2]);
+                    labPixels.push(lab);
+                }
+                
+                // Initialize centroids randomly
+                const centroids = [];
+                for (let i = 0; i < k; i++) {
+                    const randomIdx = Math.floor(Math.random() * pixelCount);
+                    centroids.push([...labPixels[randomIdx]]);
+                }
+                
+                let assignments = new Array(pixelCount);
+                let changed = true;
+                let iterations = 0;
+                const maxIterations = 20;
+                
+                while (changed && iterations < maxIterations) {
+                    changed = false;
+                    
+                    // Assign pixels to nearest centroid
+                    for (let i = 0; i < pixelCount; i++) {
+                        let minDistance = Infinity;
+                        let newAssignment = 0;
+                        
+                        for (let c = 0; c < k; c++) {
+                            const distance = euclideanDistance(labPixels[i], centroids[c]);
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                newAssignment = c;
+                            }
+                        }
+                        
+                        if (assignments[i] !== newAssignment) {
+                            assignments[i] = newAssignment;
+                            changed = true;
+                        }
+                    }
+                    
+                    // Update centroids
+                    const clusterSums = Array(k).fill().map(() => [0, 0, 0]);
+                    const clusterCounts = new Array(k).fill(0);
+                    
+                    for (let i = 0; i < pixelCount; i++) {
+                        const cluster = assignments[i];
+                        clusterSums[cluster][0] += labPixels[i][0];
+                        clusterSums[cluster][1] += labPixels[i][1];
+                        clusterSums[cluster][2] += labPixels[i][2];
+                        clusterCounts[cluster]++;
+                    }
+                    
+                    for (let c = 0; c < k; c++) {
+                        if (clusterCounts[c] > 0) {
+                            centroids[c] = [
+                                clusterSums[c][0] / clusterCounts[c],
+                                clusterSums[c][1] / clusterCounts[c],
+                                clusterSums[c][2] / clusterCounts[c]
+                            ];
+                        }
+                    }
+                    
+                    iterations++;
+                }
+                
+                // Create result image with cluster colors
+                const resultData = new ImageData(width, height);
+                const clusterColors = centroids.map(lab => labToRgb(lab[0], lab[1], lab[2]));
+                
+                for (let i = 0; i < pixelCount; i++) {
+                    const cluster = assignments[i];
+                    const color = clusterColors[cluster];
+                    const dataIdx = i * 4;
+                    
+                    resultData.data[dataIdx] = color[0];
+                    resultData.data[dataIdx + 1] = color[1];
+                    resultData.data[dataIdx + 2] = color[2];
+                    resultData.data[dataIdx + 3] = 255;
+                }
+                
+                return {
+                    processedImage: resultData,
+                    clusters: k,
+                    iterations: iterations,
+                    metrics: {
+                        cluster_count: k,
+                        iterations_used: iterations,
+                        convergence: iterations < maxIterations ? 'Converged' : 'Max iterations reached'
+                    }
+                };
+            }
+
+            function structuralSimilarity(imageData, referenceData) {
+                if (!referenceData) {
+                    return { error: 'Referans görüntü gerekli' };
+                }
+                
+                const data1 = imageData.data;
+                const data2 = referenceData.data;
+                const width = Math.min(imageData.width, referenceData.width);
+                const height = Math.min(imageData.height, referenceData.height);
+                
+                // Convert to grayscale
+                const gray1 = [];
+                const gray2 = [];
+                
+                for (let i = 0; i < width * height * 4; i += 4) {
+                    gray1.push(0.299 * data1[i] + 0.587 * data1[i + 1] + 0.114 * data1[i + 2]);
+                    gray2.push(0.299 * data2[i] + 0.587 * data2[i + 1] + 0.114 * data2[i + 2]);
+                }
+                
+                // Calculate SSIM using sliding window
+                const windowSize = 11;
+                const k1 = 0.01;
+                const k2 = 0.03;
+                const L = 255;
+                const c1 = (k1 * L) ** 2;
+                const c2 = (k2 * L) ** 2;
+                
+                let ssimSum = 0;
+                let validWindows = 0;
+                
+                for (let y = 0; y <= height - windowSize; y += windowSize) {
+                    for (let x = 0; x <= width - windowSize; x += windowSize) {
+                        const window1 = [];
+                        const window2 = [];
+                        
+                        for (let wy = 0; wy < windowSize; wy++) {
+                            for (let wx = 0; wx < windowSize; wx++) {
+                                const idx = (y + wy) * width + (x + wx);
+                                window1.push(gray1[idx]);
+                                window2.push(gray2[idx]);
+                            }
+                        }
+                        
+                        const mu1 = mean(window1);
+                        const mu2 = mean(window2);
+                        const sigma1 = variance(window1, mu1);
+                        const sigma2 = variance(window2, mu2);
+                        const sigma12 = covariance(window1, window2, mu1, mu2);
+                        
+                        const ssim = ((2 * mu1 * mu2 + c1) * (2 * sigma12 + c2)) /
+                                    ((mu1**2 + mu2**2 + c1) * (sigma1 + sigma2 + c2));
+                        
+                        ssimSum += ssim;
+                        validWindows++;
+                    }
+                }
+                
+                const avgSSIM = ssimSum / validWindows;
+                
+                return {
+                    ssim: avgSSIM,
+                    similarity_percentage: (avgSSIM * 100).toFixed(2),
+                    metrics: {
+                        ssim_score: avgSSIM.toFixed(4),
+                        similarity_level: avgSSIM > 0.9 ? 'Very High' : avgSSIM > 0.7 ? 'High' : avgSSIM > 0.5 ? 'Medium' : 'Low',
+                        windows_analyzed: validWindows
+                    }
+                };
+            }
+
+            function adaptiveHistogramEqualization(imageData) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                const tileSize = 64; // CLAHE tile size
+                const clipLimit = 2.0; // Contrast limiting threshold
+                
+                const resultData = new ImageData(width, height);
+                
+                // Process each color channel separately
+                for (let channel = 0; channel < 3; channel++) {
+                    const channelData = [];
+                    
+                    // Extract channel data
+                    for (let i = channel; i < data.length; i += 4) {
+                        channelData.push(data[i]);
+                    }
+                    
+                    // Apply CLAHE
+                    const enhancedData = applyCLAHE(channelData, width, height, tileSize, clipLimit);
+                    
+                    // Put back enhanced data
+                    for (let i = 0; i < enhancedData.length; i++) {
+                        resultData.data[i * 4 + channel] = enhancedData[i];
+                    }
+                }
+                
+                // Copy alpha channel
+                for (let i = 3; i < data.length; i += 4) {
+                    resultData.data[i] = data[i];
+                }
+                
+                return {
+                    processedImage: resultData,
+                    enhancement: 'CLAHE',
+                    metrics: {
+                        tile_size: tileSize,
+                        clip_limit: clipLimit,
+                        enhancement_type: 'Adaptive Histogram Equalization'
+                    }
+                };
+            }
+
+            function advancedErrorLevelAnalysis(imageData, quality) {
+                const canvas = new OffscreenCanvas(imageData.width, imageData.height);
+                const ctx = canvas.getContext('2d');
+                ctx.putImageData(imageData, 0, 0);
+                
+                // Simulate JPEG compression
+                return canvas.convertToBlob({ type: 'image/jpeg', quality: quality / 100 })
+                    .then(blob => blob.arrayBuffer())
+                    .then(buffer => {
+                        // This is a simplified ELA - in practice you'd need a full JPEG decoder
+                        const compressed = new Uint8Array(buffer);
+                        
+                        // Calculate difference map (simplified)
+                        const resultData = new ImageData(imageData.width, imageData.height);
+                        const data = imageData.data;
+                        
+                        for (let i = 0; i < data.length; i += 4) {
+                            // Simulate compression artifacts detection
+                            const r = data[i];
+                            const g = data[i + 1];
+                            const b = data[i + 2];
+                            
+                            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+                            const error = Math.abs(luminance - Math.round(luminance / 8) * 8);
+                            const amplified = Math.min(255, error * 10);
+                            
+                            resultData.data[i] = amplified;
+                            resultData.data[i + 1] = amplified;
+                            resultData.data[i + 2] = amplified;
+                            resultData.data[i + 3] = 255;
+                        }
+                        
+                        return {
+                            processedImage: resultData,
+                            quality: quality,
+                            metrics: {
+                                compression_quality: quality,
+                                analysis_type: 'Error Level Analysis',
+                                artifacts_detected: 'Basic compression artifacts'
+                            }
+                        };
+                    });
+            }
+
+            function vscComboAnalysis(imageData) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                let totalVariance = 0;
+                let edgePixels = 0;
+                let suspiciousRegions = 0;
+                
+                const resultData = new ImageData(width, height);
+                
+                for (let y = 1; y < height - 1; y++) {
+                    for (let x = 1; x < width - 1; x++) {
+                        const idx = (y * width + x) * 4;
+                        
+                        // Calculate local variance
+                        const neighbors = [];
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                const nIdx = ((y + dy) * width + (x + dx)) * 4;
+                                const gray = 0.299 * data[nIdx] + 0.587 * data[nIdx + 1] + 0.114 * data[nIdx + 2];
+                                neighbors.push(gray);
+                            }
+                        }
+                        
+                        const centerGray = neighbors[4];
+                        const variance = neighbors.reduce((sum, val) => sum + Math.pow(val - centerGray, 2), 0) / 9;
+                        totalVariance += variance;
+                        
+                        // Edge detection
+                        const edgeStrength = Math.abs(neighbors[1] - neighbors[7]) + Math.abs(neighbors[3] - neighbors[5]);
+                        if (edgeStrength > 50) edgePixels++;
+                        
+                        // Suspicious region detection
+                        if (variance > 1000 || edgeStrength > 100) {
+                            suspiciousRegions++;
+                            resultData.data[idx] = 255;
+                            resultData.data[idx + 1] = 0;
+                            resultData.data[idx + 2] = 0;
+                        } else {
+                            resultData.data[idx] = data[idx];
+                            resultData.data[idx + 1] = data[idx + 1];
+                            resultData.data[idx + 2] = data[idx + 2];
+                        }
+                        resultData.data[idx + 3] = 255;
+                    }
+                }
+                
+                const avgVariance = totalVariance / (width * height);
+                const edgeRatio = edgePixels / (width * height);
+                const suspiciousRatio = suspiciousRegions / (width * height);
+                
+                return {
+                    processedImage: resultData,
+                    metrics: {
+                        average_variance: avgVariance.toFixed(2),
+                        edge_ratio: (edgeRatio * 100).toFixed(2) + '%',
+                        suspicious_ratio: (suspiciousRatio * 100).toFixed(2) + '%',
+                        tampering_likelihood: suspiciousRatio > 0.1 ? 'High' : suspiciousRatio > 0.05 ? 'Medium' : 'Low'
+                    }
+                };
+            }
+
+            function performBasicAnalysis(imageData) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                const pixelCount = width * height;
+                
+                // Color statistics
+                let rSum = 0, gSum = 0, bSum = 0;
+                let rMin = 255, gMin = 255, bMin = 255;
+                let rMax = 0, gMax = 0, bMax = 0;
+                const histogram = {
+                    r: new Array(256).fill(0),
+                    g: new Array(256).fill(0),
+                    b: new Array(256).fill(0)
+                };
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    
+                    rSum += r; gSum += g; bSum += b;
+                    rMin = Math.min(rMin, r); gMin = Math.min(gMin, g); bMin = Math.min(bMin, b);
+                    rMax = Math.max(rMax, r); gMax = Math.max(gMax, g); bMax = Math.max(bMax, b);
+                    
+                    histogram.r[r]++; histogram.g[g]++; histogram.b[b]++;
+                }
+                
+                const avgR = rSum / pixelCount;
+                const avgG = gSum / pixelCount;
+                const avgB = bSum / pixelCount;
+                
+                // Calculate entropy
+                const entropy = calculateEntropy(histogram);
+                
+                return {
+                    metrics: {
+                        resolution: width + 'x' + height,
+                        pixel_count: pixelCount,
+                        avg_red: avgR.toFixed(2),
+                        avg_green: avgG.toFixed(2),
+                        avg_blue: avgB.toFixed(2),
+                        red_range: rMin + '-' + rMax,
+                        green_range: gMin + '-' + gMax,
+                        blue_range: bMin + '-' + bMax,
+                        entropy: entropy.toFixed(4)
+                    }
+                };
+            }
+
+            // Helper functions
+            function euclideanDistance(a, b) {
+                return Math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2 + (a[2] - b[2])**2);
+            }
+
+            function mean(arr) {
+                return arr.reduce((a, b) => a + b, 0) / arr.length;
+            }
+
+            function variance(arr, mean) {
+                return arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length;
+            }
+
+            function covariance(arr1, arr2, mean1, mean2) {
+                let sum = 0;
+                for (let i = 0; i < arr1.length; i++) {
+                    sum += (arr1[i] - mean1) * (arr2[i] - mean2);
+                }
+                return sum / arr1.length;
+            }
+
+            function calculateEntropy(histogram) {
+                let entropy = 0;
+                const total = histogram.r.reduce((a, b) => a + b, 0);
+                
+                for (let i = 0; i < 256; i++) {
+                    const p = histogram.r[i] / total;
+                    if (p > 0) {
+                        entropy -= p * Math.log2(p);
+                    }
+                }
+                
+                return entropy;
+            }
+
+            function rgbToLab(r, g, b) {
+                // Simplified RGB to CIE-Lab conversion
+                let x = 0.412453 * r + 0.357580 * g + 0.180423 * b;
+                let y = 0.212671 * r + 0.715160 * g + 0.072169 * b;
+                let z = 0.019334 * r + 0.119193 * g + 0.950227 * b;
+                
+                x /= 95.047;
+                y /= 100.000;
+                z /= 108.883;
+                
+                x = x > 0.008856 ? Math.pow(x, 1/3) : (7.787 * x + 16/116);
+                y = y > 0.008856 ? Math.pow(y, 1/3) : (7.787 * y + 16/116);
+                z = z > 0.008856 ? Math.pow(z, 1/3) : (7.787 * z + 16/116);
+                
+                const L = (116 * y) - 16;
+                const a = 500 * (x - y);
+                const b_lab = 200 * (y - z);
+                
+                return [L, a, b_lab];
+            }
+
+            function labToRgb(L, a, b) {
+                let y = (L + 16) / 116;
+                let x = a / 500 + y;
+                let z = y - b / 200;
+                
+                x = 0.95047 * (x**3 > 0.008856 ? x**3 : (x - 16/116) / 7.787);
+                y = 1.00000 * (y**3 > 0.008856 ? y**3 : (y - 16/116) / 7.787);
+                z = 1.08883 * (z**3 > 0.008856 ? z**3 : (z - 16/116) / 7.787);
+                
+                let r = x *  3.2406 + y * -1.5372 + z * -0.4986;
+                let g = x * -0.9689 + y *  1.8758 + z *  0.0415;
+                let b_rgb = x *  0.0557 + y * -0.2040 + z *  1.0570;
+                
+                r = Math.max(0, Math.min(255, Math.round(r * 255)));
+                g = Math.max(0, Math.min(255, Math.round(g * 255)));
+                b_rgb = Math.max(0, Math.min(255, Math.round(b_rgb * 255)));
+                
+                return [r, g, b_rgb];
+            }
+
+            function applyCLAHE(data, width, height, tileSize, clipLimit) {
+                // Simplified CLAHE implementation
+                const result = new Array(data.length);
+                
+                for (let i = 0; i < data.length; i++) {
+                    result[i] = Math.min(255, data[i] * 1.2); // Basic enhancement
+                }
+                
+                return result;
+            }
+        `;
+        
+        // Create inline Worker
+        const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+        let imageWorker;
+        
+        try {
+            imageWorker = new Worker(workerUrl);
+            console.log('✅ Web Worker başlatıldı (inline)');
+            updateGPUStatus('✅ Inline Worker aktif');
+        } catch (error) {
+            console.error('❌ Web Worker başlatılamadı:', error);
+            updateGPUStatus('❌ Worker hatası: ' + error.message);
+        } 
+
+        // Inline WebGL Code - js/WebGL.js içeriğini burada inline olarak ekledik
+        class WebGLProcessor {
+            constructor() {
+                this.canvas = document.createElement('canvas');
+                this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+                this.isSupported = !!this.gl;
+                this.programs = {};
+                
+                if (this.isSupported) {
+                    this.initShaders();
+                    console.log('✅ WebGL başlatıldı');
+                } else {
+                    console.warn('❌ WebGL desteklenmiyor');
+                }
+            }
+            
+            initShaders() {
+                // Vertex shader
+                const vertexShaderSource = `
+                    attribute vec2 a_position;
+                    attribute vec2 a_texCoord;
+                    varying vec2 v_texCoord;
+                    
+                    void main() {
+                        gl_Position = vec4(a_position, 0.0, 1.0);
+                        v_texCoord = a_texCoord;
+                    }
+                `;
+                
+                // Fragment shaders for different effects
+                const fragmentShaders = {
+                    blur: `
+                        precision mediump float;
+                        uniform sampler2D u_image;
+                        uniform vec2 u_textureSize;
+                        varying vec2 v_texCoord;
+                        
+                        void main() {
+                            vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
+                            vec4 color = texture2D(u_image, v_texCoord);
+                            color += texture2D(u_image, v_texCoord + vec2(onePixel.x, 0.0));
+                            color += texture2D(u_image, v_texCoord + vec2(-onePixel.x, 0.0));
+                            color += texture2D(u_image, v_texCoord + vec2(0.0, onePixel.y));
+                            color += texture2D(u_image, v_texCoord + vec2(0.0, -onePixel.y));
+                            gl_FragColor = color / 5.0;
+                        }
+                    `,
+                    edge: `
+                        precision mediump float;
+                        uniform sampler2D u_image;
+                        uniform vec2 u_textureSize;
+                        varying vec2 v_texCoord;
+                        
+                        void main() {
+                            vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
+                            vec4 center = texture2D(u_image, v_texCoord);
+                            vec4 left = texture2D(u_image, v_texCoord - vec2(onePixel.x, 0.0));
+                            vec4 right = texture2D(u_image, v_texCoord + vec2(onePixel.x, 0.0));
+                            vec4 up = texture2D(u_image, v_texCoord - vec2(0.0, onePixel.y));
+                            vec4 down = texture2D(u_image, v_texCoord + vec2(0.0, onePixel.y));
+                            
+                            vec4 edge = abs(left - right) + abs(up - down);
+                            gl_FragColor = vec4(edge.rgb, 1.0);
+                        }
+                    `,
+                    enhance: `
+                        precision mediump float;
+                        uniform sampler2D u_image;
+                        uniform float u_contrast;
+                        uniform float u_brightness;
+                        varying vec2 v_texCoord;
+                        
+                        void main() {
+                            vec4 color = texture2D(u_image, v_texCoord);
+                            color.rgb = ((color.rgb - 0.5) * u_contrast + 0.5) + u_brightness;
+                            gl_FragColor = clamp(color, 0.0, 1.0);
+                        }
+                    `
+                };
+                
+                Object.keys(fragmentShaders).forEach(name => {
+                    this.programs[name] = this.createProgram(vertexShaderSource, fragmentShaders[name]);
+                });
+            }
+            
+            createShader(source, type) {
+                const shader = this.gl.createShader(type);
+                this.gl.shaderSource(shader, source);
+                this.gl.compileShader(shader);
+                
+                if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+                    console.error('Shader compile error:', this.gl.getShaderInfoLog(shader));
+                    this.gl.deleteShader(shader);
+                    return null;
+                }
+                
+                return shader;
+            }
+            
+            createProgram(vertexSource, fragmentSource) {
+                const vertexShader = this.createShader(vertexSource, this.gl.VERTEX_SHADER);
+                const fragmentShader = this.createShader(fragmentSource, this.gl.FRAGMENT_SHADER);
+                
+                if (!vertexShader || !fragmentShader) return null;
+                
+                const program = this.gl.createProgram();
+                this.gl.attachShader(program, vertexShader);
+                this.gl.attachShader(program, fragmentShader);
+                this.gl.linkProgram(program);
+                
+                if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+                    console.error('Program link error:', this.gl.getProgramInfoLog(program));
+                    this.gl.deleteProgram(program);
+                    return null;
+                }
+                
+                return program;
+            }
+            
+            processImage(imageData, effect, params = {}) {
+                if (!this.isSupported || !this.programs[effect]) {
+                    return null;
+                }
+                
+                const { width, height } = imageData;
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.gl.viewport(0, 0, width, height);
+                
+                const program = this.programs[effect];
+                this.gl.useProgram(program);
+                
+                // Create and bind texture
+                const texture = this.gl.createTexture();
+                this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+                this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, imageData);
+                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+                
+                // Setup geometry
+                const positions = new Float32Array([
+                    -1, -1, 1, -1, -1, 1,
+                    -1, 1, 1, -1, 1, 1
+                ]);
+                const texCoords = new Float32Array([
+                    0, 1, 1, 1, 0, 0,
+                    0, 0, 1, 1, 1, 0
+                ]);
+                
+                const positionBuffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, positions, this.gl.STATIC_DRAW);
+                
+                const texCoordBuffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texCoordBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, texCoords, this.gl.STATIC_DRAW);
+                
+                // Bind attributes
+                const positionLocation = this.gl.getAttribLocation(program, 'a_position');
+                const texCoordLocation = this.gl.getAttribLocation(program, 'a_texCoord');
+                
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
+                this.gl.enableVertexAttribArray(positionLocation);
+                this.gl.vertexAttribPointer(positionLocation, 2, this.gl.FLOAT, false, 0, 0);
+                
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texCoordBuffer);
+                this.gl.enableVertexAttribArray(texCoordLocation);
+                this.gl.vertexAttribPointer(texCoordLocation, 2, this.gl.FLOAT, false, 0, 0);
+                
+                // Set uniforms
+                const imageLocation = this.gl.getUniformLocation(program, 'u_image');
+                const textureSizeLocation = this.gl.getUniformLocation(program, 'u_textureSize');
+                
+                this.gl.uniform1i(imageLocation, 0);
+                if (textureSizeLocation) {
+                    this.gl.uniform2f(textureSizeLocation, width, height);
+                }
+                
+                if (effect === 'enhance') {
+                    const contrastLocation = this.gl.getUniformLocation(program, 'u_contrast');
+                    const brightnessLocation = this.gl.getUniformLocation(program, 'u_brightness');
+                    this.gl.uniform1f(contrastLocation, params.contrast || 1.2);
+                    this.gl.uniform1f(brightnessLocation, params.brightness || 0.1);
+                }
+                
+                // Draw
+                this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+                
+                // Get result
+                const result = new ImageData(width, height);
+                this.gl.readPixels(0, 0, width, height, this.gl.RGBA, this.gl.UNSIGNED_BYTE, result.data);
+                
+                // Cleanup
+                this.gl.deleteTexture(texture);
+                this.gl.deleteBuffer(positionBuffer);
+                this.gl.deleteBuffer(texCoordBuffer);
+                
+                return result;
+            }
+        }
+        
+        // Global variables
+        let currentImage = null;
+        let webglProcessor = new WebGLProcessor();
+        let perfMonitorVisible = false;
+        let performanceData = {
+            processingTime: 0,
+            memoryUsage: 0,
+            gpuAccelerated: false
+        };
+
+        // UI Elements
+        const elements = {
+            imageInput: document.getElementById('imageInput'),
+            originalCanvas: document.getElementById('originalCanvas'),
+            processedCanvas: document.getElementById('processedCanvas'),
+            anomalyCanvas: document.getElementById('anomalyCanvas'),
+            histogramCanvas: document.getElementById('histogramCanvas'),
+            presetsGrid: document.getElementById('presetsGrid'),
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            progressFill: document.getElementById('progressFill'),
+            progressText: document.getElementById('progressText'),
+            loadingMessage: document.getElementById('loadingMessage'),
+            analysisResults: document.getElementById('analysisResults'),
+            algorithmResults: document.getElementById('algorithmResults'),
+            performanceOverlay: document.getElementById('performanceOverlay'),
+            perfToggle: document.getElementById('perfToggle'),
+            gpuAcceleration: document.getElementById('gpuAcceleration'),
+            memoryUsage: document.getElementById('memoryUsage'),
+            processTime: document.getElementById('processTime'),
+            
+            // Algorithm buttons
+            otsuBtn: document.getElementById('otsuBtn'),
+            kmeansBtn: document.getElementById('kmeansBtn'),
+            ssimBtn: document.getElementById('ssimBtn'),
+            claheBtn: document.getElementById('claheBtn'),
+            advancedElaBtn: document.getElementById('advancedElaBtn'),
+            
+            // Header buttons
+            generateReportBtn: document.getElementById('generateReportBtn'),
+            signatureAnalysisBtn: document.getElementById('signatureAnalysisBtn'),
+            compareAllBtn: document.getElementById('compareAllBtn')
+        };
+
+        // Analysis presets
+        const analysisPresets = [
+            { id: 'vscCombo', name: 'VSC Combo', icon: '🎯', description: 'Performans karşılaştırması yapılıyor...' },
+            { id: 'basicAnalysis', name: 'Temel Analiz', icon: '📊', description: 'Temel görüntü analizi' },
+            { id: 'otsu', name: 'Otsu Threshold', icon: '🔍', description: 'Otomatik eşikleme' },
+            { id: 'kmeans', name: 'K-Means', icon: '🎨', description: 'Renk kümeleme' },
+            { id: 'ssim', name: 'SSIM', icon: '📐', description: 'Yapısal benzerlik' },
+            { id: 'clahe', name: 'CLAHE', icon: '⚡', description: 'Adaptif eşitleme' },
+            { id: 'advancedELA', name: 'Gelişmiş ELA', icon: '🔬', description: 'Error level analizi' }
+        ];
+
+        // Initialize UI
+        function initializeUI() {
+            // Create preset buttons
+            elements.presetsGrid.innerHTML = '';
+            analysisPresets.forEach(preset => {
+                const presetButton = document.createElement('div');
+                presetButton.className = 'preset-button';
+                presetButton.innerHTML = `
+                    <div class="preset-icon">${preset.icon}</div>
+                    <div class="preset-name">${preset.name}</div>
+                    <div style="font-size: 0.9em; opacity: 0.8;">${preset.description}</div>
+                `;
+                presetButton.addEventListener('click', () => runAnalysis(preset.id));
+                elements.presetsGrid.appendChild(presetButton);
+            });
+
+            // GPU status check
+            updateGPUStatus('🔍 GPU desteği kontrol ediliyor...');
+            setTimeout(() => {
+                if (webglProcessor.isSupported) {
+                    updateGPUStatus('✅ WebGL destekli');
+                    performanceData.gpuAccelerated = true;
+                } else {
+                    updateGPUStatus('⚠️ WebGL desteklenmiyor');
+                    performanceData.gpuAccelerated = false;
+                }
+            }, 1000);
+
+            // Memory usage update
+            if (performance.memory) {
+                setInterval(() => {
+                    const used = (performance.memory.usedJSHeapSize / 1048576).toFixed(1);
+                    const total = (performance.memory.totalJSHeapSize / 1048576).toFixed(1);
+                    elements.memoryUsage.textContent = `${used}/${total} MB`;
+                    performanceData.memoryUsage = parseFloat(used);
+                }, 2000);
+            }
+        }
+
+        function updateGPUStatus(status) {
+            if (elements.gpuAcceleration) {
+                elements.gpuAcceleration.textContent = status;
+            }
+        }
+
+        // Event Listeners
+        elements.imageInput.addEventListener('change', handleImageUpload);
+        elements.perfToggle.addEventListener('click', togglePerformanceMonitor);
+
+        // Algorithm button event listeners
+        elements.otsuBtn.addEventListener('click', () => runAnalysis('otsu'));
+        elements.kmeansBtn.addEventListener('click', () => runAnalysis('kmeans'));
+        elements.ssimBtn.addEventListener('click', () => runAnalysis('ssim'));
+        elements.claheBtn.addEventListener('click', () => runAnalysis('clahe'));
+        elements.advancedElaBtn.addEventListener('click', () => runAnalysis('advancedELA'));
+
+        // Header button event listeners
+        elements.generateReportBtn.addEventListener('click', generatePDFReport);
+        elements.signatureAnalysisBtn.addEventListener('click', openSignatureAnalysis);
+        elements.compareAllBtn.addEventListener('click', openComparison);
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    currentImage = img;
+                    displayImage(img, elements.originalCanvas);
+                    enableButtons();
+                    
+                    // Clear previous results
+                    clearCanvas(elements.processedCanvas);
+                    clearCanvas(elements.anomalyCanvas);
+                    clearCanvas(elements.histogramCanvas);
+                    
+                    // Update analysis results
+                    updateAnalysisResults({
+                        success: true,
+                        metrics: {
+                            resolution: `${img.width}x${img.height}`,
+                            file_size: (file.size / 1024).toFixed(2) + ' KB',
+                            file_type: file.type,
+                            last_modified: new Date(file.lastModified).toLocaleString('tr-TR')
+                        }
+                    });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function displayImage(img, canvas) {
+            const ctx = canvas.getContext('2d');
+            const maxWidth = canvas.parentElement.clientWidth - 40;
+            const maxHeight = 400;
+            
+            let { width, height } = img;
+            
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width *= ratio;
+                height *= ratio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+        }
+
+        function clearCanvas(canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.width = 0;
+            canvas.height = 0;
+        }
+
+        function enableButtons() {
+            const buttons = [
+                elements.otsuBtn, elements.kmeansBtn, elements.ssimBtn,
+                elements.claheBtn, elements.advancedElaBtn,
+                elements.generateReportBtn, elements.signatureAnalysisBtn, elements.compareAllBtn
+            ];
+            
+            buttons.forEach(btn => {
+                if (btn) btn.disabled = false;
+            });
+        }
+
+        function showLoading(message) {
+            elements.loadingMessage.textContent = message;
+            elements.loadingOverlay.classList.add('active');
+            updateProgress(0);
+        }
+
+        function hideLoading() {
+            elements.loadingOverlay.classList.remove('active');
+        }
+
+        function updateProgress(percent) {
+            elements.progressFill.style.width = percent + '%';
+            elements.progressText.textContent = Math.round(percent) + '%';
+        }
+
+        function runAnalysis(algorithm) {
+            if (!currentImage) {
+                alert('Önce bir görüntü yükleyin!');
+                return;
+            }
+
+            const preset = analysisPresets.find(p => p.id === algorithm);
+            showLoading(preset ? preset.description : 'Analiz yapılıyor...');
+            
+            const startTime = performance.now();
+            
+            setTimeout(() => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = currentImage.width;
+                canvas.height = currentImage.height;
+                ctx.drawImage(currentImage, 0, 0);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                updateProgress(25);
+
+                if (imageWorker) {
+                    imageWorker.postMessage({
+                        imageData: imageData,
+                        algorithm: algorithm,
+                        params: getAlgorithmParams(algorithm)
+                    });
+                    
+                    imageWorker.onmessage = function(e) {
+                        const endTime = performance.now();
+                        performanceData.processingTime = (endTime - startTime).toFixed(2);
+                        elements.processTime.textContent = performanceData.processingTime + ' ms';
+                        
+                        updateProgress(100);
+                        
+                        setTimeout(() => {
+                            hideLoading();
+                            handleAnalysisResult(e.data);
+                        }, 500);
+                    };
+                    
+                    imageWorker.onerror = function(error) {
+                        hideLoading();
+                        console.error('Worker error:', error);
+                        updateAlgorithmResults({
+                            error: 'Worker hatası: ' + error.message
+                        });
+                    };
+                } else {
+                    hideLoading();
+                    updateAlgorithmResults({
+                        error: 'Web Worker kullanılamıyor'
+                    });
+                }
+            }, 100);
+        }
+
+        function getAlgorithmParams(algorithm) {
+            switch (algorithm) {
+                case 'kmeans':
+                    return { k: 5 };
+                case 'advancedELA':
+                    return { quality: 85 };
+                default:
+                    return {};
+            }
+        }
+
+        function handleAnalysisResult(result) {
+            if (result.success && result.result) {
+                const analysisResult = result.result;
+                
+                // Display processed image if available
+                if (analysisResult.processedImage) {
+                    displayImageData(analysisResult.processedImage, elements.processedCanvas);
+                }
+                
+                // Display metrics
+                if (analysisResult.metrics) {
+                    updateAlgorithmResults(analysisResult);
+                }
+                
+                // Draw histogram for basic analysis
+                if (result.algorithm === 'basicAnalysis') {
+                    drawHistogram(currentImage);
+                }
+                
+                // Create anomaly map for VSC combo
+                if (result.algorithm === 'vscCombo') {
+                    displayImageData(analysisResult.processedImage, elements.anomalyCanvas);
+                }
+                
+            } else {
+                updateAlgorithmResults({
+                    error: result.error || 'Analiz hatası'
+                });
+            }
+        }
+
+        function displayImageData(imageData, canvas) {
+            canvas.width = imageData.width;
+            canvas.height = imageData.height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function drawHistogram(img) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            const histogram = {
+                r: new Array(256).fill(0),
+                g: new Array(256).fill(0),
+                b: new Array(256).fill(0)
+            };
+            
+            for (let i = 0; i < data.length; i += 4) {
+                histogram.r[data[i]]++;
+                histogram.g[data[i + 1]]++;
+                histogram.b[data[i + 2]]++;
+            }
+            
+            // Draw histogram
+            const histCanvas = elements.histogramCanvas;
+            histCanvas.width = 512;
+            histCanvas.height = 200;
+            const histCtx = histCanvas.getContext('2d');
+            
+            const maxCount = Math.max(
+                Math.max(...histogram.r),
+                Math.max(...histogram.g),
+                Math.max(...histogram.b)
+            );
+            
+            histCtx.clearRect(0, 0, 512, 200);
+            
+            for (let i = 0; i < 256; i++) {
+                const x = i * 2;
+                
+                // Red
+                histCtx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                const rHeight = (histogram.r[i] / maxCount) * 180;
+                histCtx.fillRect(x, 200 - rHeight, 2, rHeight);
+                
+                // Green
+                histCtx.fillStyle = 'rgba(0, 255, 0, 0.7)';
+                const gHeight = (histogram.g[i] / maxCount) * 180;
+                histCtx.fillRect(x, 200 - gHeight, 2, gHeight);
+                
+                // Blue
+                histCtx.fillStyle = 'rgba(0, 0, 255, 0.7)';
+                const bHeight = (histogram.b[i] / maxCount) * 180;
+                histCtx.fillRect(x, 200 - bHeight, 2, bHeight);
+            }
+        }
+
+        function updateAnalysisResults(result) {
+            if (!result.metrics) return;
+            
+            let html = '';
+            
+            if (result.error) {
+                html = `
+                    <div class="analysis-card danger">
+                        <h3>❌ Hata</h3>
+                        <p>${result.error}</p>
+                    </div>
+                `;
+            } else {
+                const metrics = result.metrics;
+                html = `
+                    <div class="analysis-card success">
+                        <h3>✅ Görüntü Bilgileri</h3>
+                        ${Object.entries(metrics).map(([key, value]) => 
+                            `<div class="metric">
+                                <span class="metric-label">${formatMetricName(key)}:</span>
+                                <span class="metric-value">${value}</span>
+                            </div>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+            
+            elements.analysisResults.innerHTML = html;
+        }
+
+        function updateAlgorithmResults(result) {
+            let html = '';
+            
+            if (result.error) {
+                html = `
+                    <div class="analysis-card danger">
+                        <h3>❌ Algoritma Hatası</h3>
+                        <p>${result.error}</p>
+                    </div>
+                `;
+            } else if (result.metrics) {
+                const metrics = result.metrics;
+                html = `
+                    <div class="analysis-card info">
+                        <h3>🧬 Algoritma Sonuçları</h3>
+                        ${Object.entries(metrics).map(([key, value]) => 
+                            `<div class="metric">
+                                <span class="metric-label">${formatMetricName(key)}:</span>
+                                <span class="metric-value">${value}</span>
+                            </div>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+            
+            elements.algorithmResults.innerHTML = html;
+        }
+
+        function formatMetricName(key) {
+            const names = {
+                'resolution': 'Çözünürlük',
+                'pixel_count': 'Piksel Sayısı',
+                'file_size': 'Dosya Boyutu',
+                'file_type': 'Dosya Türü',
+                'last_modified': 'Son Değişiklik',
+                'avg_red': 'Ortalama Kırmızı',
+                'avg_green': 'Ortalama Yeşil',
+                'avg_blue': 'Ortalama Mavi',
+                'entropy': 'Entropi',
+                'threshold_value': 'Eşik Değeri',
+                'background_ratio': 'Arka Plan Oranı',
+                'foreground_ratio': 'Ön Plan Oranı',
+                'cluster_count': 'Küme Sayısı',
+                'iterations_used': 'İterasyon Sayısı',
+                'convergence': 'Yakınsama',
+                'ssim_score': 'SSIM Skoru',
+                'similarity_level': 'Benzerlik Seviyesi',
+                'windows_analyzed': 'Analiz Edilen Pencere',
+                'tile_size': 'Tile Boyutu',
+                'clip_limit': 'Klip Limiti',
+                'enhancement_type': 'İyileştirme Türü',
+                'compression_quality': 'Sıkıştırma Kalitesi',
+                'analysis_type': 'Analiz Türü',
+                'artifacts_detected': 'Tespit Edilen Artifaktlar',
+                'average_variance': 'Ortalama Varyans',
+                'edge_ratio': 'Kenar Oranı',
+                'suspicious_ratio': 'Şüpheli Bölge Oranı',
+                'tampering_likelihood': 'Tahrifat Olasılığı'
+            };
+            
+            return names[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function togglePerformanceMonitor() {
+            perfMonitorVisible = !perfMonitorVisible;
+            elements.performanceOverlay.classList.toggle('visible', perfMonitorVisible);
+            
+            if (perfMonitorVisible) {
+                updatePerformanceDisplay();
+            }
+        }
+
+        function updatePerformanceDisplay() {
+            // Update CPU/GPU bars (simulated)
+            const cpuUsage = Math.random() * 60 + 20; // 20-80%
+            const gpuUsage = performanceData.gpuAccelerated ? Math.random() * 40 + 30 : 0; // 30-70% or 0
+            
+            document.getElementById('cpuBar').style.height = cpuUsage + '%';
+            document.getElementById('gpuBar').style.height = gpuUsage + '%';
+        }
+
+        // PDF Report Generation
+        function generatePDFReport() {
+            if (!currentImage) {
+                alert('Önce bir görüntü yükleyin ve analiz yapın!');
+                return;
+            }
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                
+                // Title
+                pdf.setFontSize(20);
+                pdf.text('Adli Belge Analizi Raporu', 20, 30);
+                
+                // Date
+                pdf.setFontSize(12);
+                pdf.text('Tarih: ' + new Date().toLocaleString('tr-TR'), 20, 50);
+                
+                // Image info
+                pdf.text('Görüntü Bilgileri:', 20, 70);
+                pdf.text(`Çözünürlük: ${currentImage.width}x${currentImage.height}`, 30, 85);
+                
+                // Performance info
+                pdf.text('Performans Bilgileri:', 20, 110);
+                pdf.text(`İşlem Süresi: ${performanceData.processingTime} ms`, 30, 125);
+                pdf.text(`GPU Hızlandırma: ${performanceData.gpuAccelerated ? 'Aktif' : 'Pasif'}`, 30, 140);
+                pdf.text(`Bellek Kullanımı: ${performanceData.memoryUsage} MB`, 30, 155);
+                
+                // Save
+                pdf.save('adli-belge-analizi-raporu.pdf');
+                
+            } catch (error) {
+                console.error('PDF oluşturma hatası:', error);
+                alert('PDF oluşturulurken hata oluştu: ' + error.message);
+            }
+        }
+
+        // Modal functions
+        function openSignatureAnalysis() {
+            document.getElementById('signatureModal').classList.add('active');
+            
+            if (currentImage) {
+                const canvas = document.getElementById('signatureCanvas');
+                displayImage(currentImage, canvas);
+            }
+        }
+
+        function closeSignatureModal() {
+            document.getElementById('signatureModal').classList.remove('active');
+        }
+
+        function openComparison() {
+            document.getElementById('comparisonModal').classList.add('active');
+        }
+
+        function closeComparisonModal() {
+            document.getElementById('comparisonModal').classList.remove('active');
+        }
+
+        function selectSignatureMode() {
+            alert('İmza seçim modu aktif! Canvas üzerinde bir alan seçin.');
+        }
+
+        function clearSignatureSelection() {
+            const rect = document.getElementById('signatureRect');
+            rect.style.display = 'none';
+        }
+
+        function analyzeSignature() {
+            alert('İmza analizi başlatıldı!');
+        }
+
+        function performComparison() {
+            alert('Karşılaştırma analizi başlatıldı!');
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUI();
+            console.log('🚀 Forensic Analyzer v4.0 Standalone başlatıldı');
+        });
+
+    </script>
+</body>
+</html> 

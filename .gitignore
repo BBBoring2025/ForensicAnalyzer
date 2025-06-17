@@ -1,0 +1,42 @@
+# Forensic Analyzer v4.0 - .gitignore
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sublime-workspace
+
+# Log Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Temporary Files
+*.tmp
+*.temp
+.cache/
+
+# Node.js (eğer gelecekte eklerseniz)
+node_modules/
+package-lock.json
+
+# Test Files and Analysis Outputs
+test-images/
+sample-documents/
+*.test.jpg
+*.test.png
+analysis-reports/
+exported-reports/
+*.backup
