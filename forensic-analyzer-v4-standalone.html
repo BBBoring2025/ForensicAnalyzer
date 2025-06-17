@@ -369,7 +369,6 @@
     </style>
     
     <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -1763,43 +1762,67 @@
             if (gpuBar) gpuBar.style.height = gpuUsage + '%';
         }
 
-        // PDF Report Generation
-        function generatePDFReport() {
-            if (!currentImage) {
-                alert('Önce bir görüntü yükleyin ve analiz yapın!');
-                return;
-            }
-            
-            try {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF();
-                
-                // Title
-                pdf.setFontSize(20);
-                pdf.text('Adli Belge Analizi Raporu', 20, 30);
-                
-                // Date
-                pdf.setFontSize(12);
-                pdf.text('Tarih: ' + new Date().toLocaleString('tr-TR'), 20, 50);
-                
-                // Image info
-                pdf.text('Görüntü Bilgileri:', 20, 70);
-                pdf.text(`Çözünürlük: ${currentImage.width}x${currentImage.height}`, 30, 85);
-                
-                // Performance info
-                pdf.text('Performans Bilgileri:', 20, 110);
-                pdf.text(`İşlem Süresi: ${performanceData.processingTime} ms`, 30, 125);
-                pdf.text(`GPU Hızlandırma: ${performanceData.gpuAccelerated ? 'Aktif' : 'Pasif'}`, 30, 140);
-                pdf.text(`Bellek Kullanımı: ${performanceData.memoryUsage} MB`, 30, 155);
-                
-                // Save
-                pdf.save('adli-belge-analizi-raporu.pdf');
-                
-            } catch (error) {
-                console.error('PDF oluşturma hatası:', error);
-                alert('PDF oluşturulurken hata oluştu: ' + error.message);
-            }
-        }
+// PDF Report Generation - Standalone version without external dependency
+function generatePDFReport() {
+    if (!currentImage) {
+        alert('Önce bir görüntü yükleyin ve analiz yapın!');
+        return;
+    }
+    
+    // Create detailed text report
+    let reportContent = `
+ADLI BELGE ANALİZİ RAPORU
+========================
+
+Tarih: ${new Date().toLocaleString('tr-TR')}
+Sistem: Forensic Analyzer v4.0 Standalone
+
+GÖRÜNTÜ BİLGİLERİ:
+- Çözünürlük: ${currentImage.width}x${currentImage.height}
+- Dosya Boyutu: ${currentImage.src.length > 1000 ? 'Büyük' : 'Orta'} boyut
+
+PERFORMANS BİLGİLERİ:
+- İşlem Süresi: ${performanceData.processingTime || 'Henüz analiz yapılmadı'} ms
+- GPU Hızlandırma: ${performanceData.gpuAccelerated ? 'Aktif' : 'Pasif'}
+- Bellek Kullanımı: ${performanceData.memoryUsage || 'Bilinmiyor'} MB
+
+ANALİZ SONUÇLARI:
+- Durum: Görüntü yüklendi ve analiz için hazır
+- Algoritma Desteği: Otsu, K-Means, SSIM, CLAHE, ELA, VSC Combo
+- WebGL Desteği: ${performanceData.gpuAccelerated ? 'Destekleniyor' : 'Desteklenmiyor'}
+
+TEKNIK DETAYLAR:
+- Inline Web Worker: Aktif
+- Standalone Mod: Evet (External dependency yok)
+- Browser Compatibility: Modern browsers
+
+UYARI:
+Bu rapor eğitim ve araştırma amaçlıdır. 
+Yasal işlemler için profesyonel adli inceleme gereklidir.
+
+========================
+Forensic Analyzer v4.0 Standalone
+Rapor Oluşturma Tarihi: ${new Date().toLocaleString('tr-TR')}
+    `;
+    
+    // Create downloadable text file
+    try {
+        const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `adli-belge-analizi-raporu-${new Date().toISOString().slice(0,10)}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('📄 Analiz raporu TXT formatında başarıyla indirildi!');
+    } catch (error) {
+        console.error('Rapor oluşturma hatası:', error);
+        alert('Rapor oluşturulurken hata oluştu: ' + error.message);
+    }
+}
 
         // Modal functions
         function openSignatureAnalysis() {
