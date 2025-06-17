@@ -1,3 +1,8 @@
+Kodunuzu inceledim ve JavaScript initialization sorunu görüyorum. Ana problem DOM elementlerine erişim DOM yüklenmeden önce yapılıyor. İşte düzeltilmiş versiyonu:
+
+Ana sorun JavaScript kodunuzda DOM elementlerine erişim problemi. İşte düzeltilmiş kod:
+
+```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -1176,7 +1181,7 @@
             updateGPUStatus('❌ Worker hatası: ' + error.message);
         } 
 
-        // Inline WebGL Code - js/WebGL.js içeriğini burada inline olarak ekledik
+        // Inline WebGL Code
         class WebGLProcessor {
             constructor() {
                 this.canvas = document.createElement('canvas');
@@ -1205,7 +1210,7 @@
                     }
                 `;
                 
-                // Fragment shaders for different effects
+                // Fragment shaders
                 const fragmentShaders = {
                     blur: `
                         precision mediump float;
@@ -1294,89 +1299,6 @@
                 
                 return program;
             }
-            
-            processImage(imageData, effect, params = {}) {
-                if (!this.isSupported || !this.programs[effect]) {
-                    return null;
-                }
-                
-                const { width, height } = imageData;
-                this.canvas.width = width;
-                this.canvas.height = height;
-                this.gl.viewport(0, 0, width, height);
-                
-                const program = this.programs[effect];
-                this.gl.useProgram(program);
-                
-                // Create and bind texture
-                const texture = this.gl.createTexture();
-                this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-                this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, imageData);
-                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-                
-                // Setup geometry
-                const positions = new Float32Array([
-                    -1, -1, 1, -1, -1, 1,
-                    -1, 1, 1, -1, 1, 1
-                ]);
-                const texCoords = new Float32Array([
-                    0, 1, 1, 1, 0, 0,
-                    0, 0, 1, 1, 1, 0
-                ]);
-                
-                const positionBuffer = this.gl.createBuffer();
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, positions, this.gl.STATIC_DRAW);
-                
-                const texCoordBuffer = this.gl.createBuffer();
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texCoordBuffer);
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, texCoords, this.gl.STATIC_DRAW);
-                
-                // Bind attributes
-                const positionLocation = this.gl.getAttribLocation(program, 'a_position');
-                const texCoordLocation = this.gl.getAttribLocation(program, 'a_texCoord');
-                
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
-                this.gl.enableVertexAttribArray(positionLocation);
-                this.gl.vertexAttribPointer(positionLocation, 2, this.gl.FLOAT, false, 0, 0);
-                
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texCoordBuffer);
-                this.gl.enableVertexAttribArray(texCoordLocation);
-                this.gl.vertexAttribPointer(texCoordLocation, 2, this.gl.FLOAT, false, 0, 0);
-                
-                // Set uniforms
-                const imageLocation = this.gl.getUniformLocation(program, 'u_image');
-                const textureSizeLocation = this.gl.getUniformLocation(program, 'u_textureSize');
-                
-                this.gl.uniform1i(imageLocation, 0);
-                if (textureSizeLocation) {
-                    this.gl.uniform2f(textureSizeLocation, width, height);
-                }
-                
-                if (effect === 'enhance') {
-                    const contrastLocation = this.gl.getUniformLocation(program, 'u_contrast');
-                    const brightnessLocation = this.gl.getUniformLocation(program, 'u_brightness');
-                    this.gl.uniform1f(contrastLocation, params.contrast || 1.2);
-                    this.gl.uniform1f(brightnessLocation, params.brightness || 0.1);
-                }
-                
-                // Draw
-                this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
-                
-                // Get result
-                const result = new ImageData(width, height);
-                this.gl.readPixels(0, 0, width, height, this.gl.RGBA, this.gl.UNSIGNED_BYTE, result.data);
-                
-                // Cleanup
-                this.gl.deleteTexture(texture);
-                this.gl.deleteBuffer(positionBuffer);
-                this.gl.deleteBuffer(texCoordBuffer);
-                
-                return result;
-            }
         }
         
         // Global variables
@@ -1387,39 +1309,6 @@
             processingTime: 0,
             memoryUsage: 0,
             gpuAccelerated: false
-        };
-
-        // UI Elements
-        const elements = {
-            imageInput: document.getElementById('imageInput'),
-            originalCanvas: document.getElementById('originalCanvas'),
-            processedCanvas: document.getElementById('processedCanvas'),
-            anomalyCanvas: document.getElementById('anomalyCanvas'),
-            histogramCanvas: document.getElementById('histogramCanvas'),
-            presetsGrid: document.getElementById('presetsGrid'),
-            loadingOverlay: document.getElementById('loadingOverlay'),
-            progressFill: document.getElementById('progressFill'),
-            progressText: document.getElementById('progressText'),
-            loadingMessage: document.getElementById('loadingMessage'),
-            analysisResults: document.getElementById('analysisResults'),
-            algorithmResults: document.getElementById('algorithmResults'),
-            performanceOverlay: document.getElementById('performanceOverlay'),
-            perfToggle: document.getElementById('perfToggle'),
-            gpuAcceleration: document.getElementById('gpuAcceleration'),
-            memoryUsage: document.getElementById('memoryUsage'),
-            processTime: document.getElementById('processTime'),
-            
-            // Algorithm buttons
-            otsuBtn: document.getElementById('otsuBtn'),
-            kmeansBtn: document.getElementById('kmeansBtn'),
-            ssimBtn: document.getElementById('ssimBtn'),
-            claheBtn: document.getElementById('claheBtn'),
-            advancedElaBtn: document.getElementById('advancedElaBtn'),
-            
-            // Header buttons
-            generateReportBtn: document.getElementById('generateReportBtn'),
-            signatureAnalysisBtn: document.getElementById('signatureAnalysisBtn'),
-            compareAllBtn: document.getElementById('compareAllBtn')
         };
 
         // Analysis presets
@@ -1433,21 +1322,27 @@
             { id: 'advancedELA', name: 'Gelişmiş ELA', icon: '🔬', description: 'Error level analizi' }
         ];
 
-        // Initialize UI
+        // Main functions
         function initializeUI() {
+            console.log('🔧 UI başlatılıyor...');
+            
             // Create preset buttons
-            elements.presetsGrid.innerHTML = '';
-            analysisPresets.forEach(preset => {
-                const presetButton = document.createElement('div');
-                presetButton.className = 'preset-button';
-                presetButton.innerHTML = `
-                    <div class="preset-icon">${preset.icon}</div>
-                    <div class="preset-name">${preset.name}</div>
-                    <div style="font-size: 0.9em; opacity: 0.8;">${preset.description}</div>
-                `;
-                presetButton.addEventListener('click', () => runAnalysis(preset.id));
-                elements.presetsGrid.appendChild(presetButton);
-            });
+            const presetsGrid = document.getElementById('presetsGrid');
+            if (presetsGrid) {
+                presetsGrid.innerHTML = '';
+                analysisPresets.forEach(preset => {
+                    const presetButton = document.createElement('div');
+                    presetButton.className = 'preset-button';
+                    presetButton.innerHTML = `
+                        <div class="preset-icon">${preset.icon}</div>
+                        <div class="preset-name">${preset.name}</div>
+                        <div style="font-size: 0.9em; opacity: 0.8;">${preset.description}</div>
+                    `;
+                    presetButton.addEventListener('click', () => runAnalysis(preset.id));
+                    presetsGrid.appendChild(presetButton);
+                });
+                console.log('✅ Preset buttons oluşturuldu');
+            }
 
             // GPU status check
             updateGPUStatus('🔍 GPU desteği kontrol ediliyor...');
@@ -1466,36 +1361,39 @@
                 setInterval(() => {
                     const used = (performance.memory.usedJSHeapSize / 1048576).toFixed(1);
                     const total = (performance.memory.totalJSHeapSize / 1048576).toFixed(1);
-                    elements.memoryUsage.textContent = `${used}/${total} MB`;
-                    performanceData.memoryUsage = parseFloat(used);
+                    const memoryUsageElement = document.getElementById('memoryUsage');
+                    if (memoryUsageElement) {
+                        memoryUsageElement.textContent = `${used}/${total} MB`;
+                        performanceData.memoryUsage = parseFloat(used);
+                    }
                 }, 2000);
             }
         }
 
         function updateGPUStatus(status) {
-            if (elements.gpuAcceleration) {
-                elements.gpuAcceleration.textContent = status;
+            const gpuAccelerationElement = document.getElementById('gpuAcceleration');
+            if (gpuAccelerationElement) {
+                gpuAccelerationElement.textContent = status;
             }
         }
-
-        // Event Listeners will be added after DOM is fully loaded
 
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
+            console.log('📁 Dosya yükleniyor:', file.name);
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
                     currentImage = img;
-                    displayImage(img, elements.originalCanvas);
+                    displayImage(img, document.getElementById('originalCanvas'));
                     enableButtons();
                     
                     // Clear previous results
-                    clearCanvas(elements.processedCanvas);
-                    clearCanvas(elements.anomalyCanvas);
-                    clearCanvas(elements.histogramCanvas);
+                    clearCanvas(document.getElementById('processedCanvas'));
+                    clearCanvas(document.getElementById('anomalyCanvas'));
+                    clearCanvas(document.getElementById('histogramCanvas'));
                     
                     // Update analysis results
                     updateAnalysisResults({
@@ -1507,6 +1405,8 @@
                             last_modified: new Date(file.lastModified).toLocaleString('tr-TR')
                         }
                     });
+                    
+                    console.log('✅ Görüntü yüklendi ve görüntülendi');
                 };
                 img.src = e.target.result;
             };
@@ -1514,6 +1414,8 @@
         }
 
         function displayImage(img, canvas) {
+            if (!canvas) return;
+            
             const ctx = canvas.getContext('2d');
             const maxWidth = canvas.parentElement.clientWidth - 40;
             const maxHeight = 400;
@@ -1532,6 +1434,7 @@
         }
 
         function clearCanvas(canvas) {
+            if (!canvas) return;
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             canvas.width = 0;
@@ -1539,30 +1442,37 @@
         }
 
         function enableButtons() {
-            const buttons = [
-                elements.otsuBtn, elements.kmeansBtn, elements.ssimBtn,
-                elements.claheBtn, elements.advancedElaBtn,
-                elements.generateReportBtn, elements.signatureAnalysisBtn, elements.compareAllBtn
+            const buttonIds = [
+                'otsuBtn', 'kmeansBtn', 'ssimBtn', 'claheBtn', 'advancedElaBtn',
+                'generateReportBtn', 'signatureAnalysisBtn', 'compareAllBtn'
             ];
             
-            buttons.forEach(btn => {
+            buttonIds.forEach(id => {
+                const btn = document.getElementById(id);
                 if (btn) btn.disabled = false;
             });
         }
 
         function showLoading(message) {
-            elements.loadingMessage.textContent = message;
-            elements.loadingOverlay.classList.add('active');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingMessage = document.getElementById('loadingMessage');
+            
+            if (loadingMessage) loadingMessage.textContent = message;
+            if (loadingOverlay) loadingOverlay.classList.add('active');
             updateProgress(0);
         }
 
         function hideLoading() {
-            elements.loadingOverlay.classList.remove('active');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) loadingOverlay.classList.remove('active');
         }
 
         function updateProgress(percent) {
-            elements.progressFill.style.width = percent + '%';
-            elements.progressText.textContent = Math.round(percent) + '%';
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            if (progressFill) progressFill.style.width = percent + '%';
+            if (progressText) progressText.textContent = Math.round(percent) + '%';
         }
 
         function runAnalysis(algorithm) {
@@ -1597,7 +1507,10 @@
                     imageWorker.onmessage = function(e) {
                         const endTime = performance.now();
                         performanceData.processingTime = (endTime - startTime).toFixed(2);
-                        elements.processTime.textContent = performanceData.processingTime + ' ms';
+                        const processTimeElement = document.getElementById('processTime');
+                        if (processTimeElement) {
+                            processTimeElement.textContent = performanceData.processingTime + ' ms';
+                        }
                         
                         updateProgress(100);
                         
@@ -1640,7 +1553,7 @@
                 
                 // Display processed image if available
                 if (analysisResult.processedImage) {
-                    displayImageData(analysisResult.processedImage, elements.processedCanvas);
+                    displayImageData(analysisResult.processedImage, document.getElementById('processedCanvas'));
                 }
                 
                 // Display metrics
@@ -1655,7 +1568,7 @@
                 
                 // Create anomaly map for VSC combo
                 if (result.algorithm === 'vscCombo') {
-                    displayImageData(analysisResult.processedImage, elements.anomalyCanvas);
+                    displayImageData(analysisResult.processedImage, document.getElementById('anomalyCanvas'));
                 }
                 
             } else {
@@ -1666,6 +1579,8 @@
         }
 
         function displayImageData(imageData, canvas) {
+            if (!canvas || !imageData) return;
+            
             canvas.width = imageData.width;
             canvas.height = imageData.height;
             
@@ -1696,7 +1611,9 @@
             }
             
             // Draw histogram
-            const histCanvas = elements.histogramCanvas;
+            const histCanvas = document.getElementById('histogramCanvas');
+            if (!histCanvas) return;
+            
             histCanvas.width = 512;
             histCanvas.height = 200;
             const histCtx = histCanvas.getContext('2d');
@@ -1730,7 +1647,8 @@
         }
 
         function updateAnalysisResults(result) {
-            if (!result.metrics) return;
+            const analysisResults = document.getElementById('analysisResults');
+            if (!analysisResults || !result.metrics) return;
             
             let html = '';
             
@@ -1756,10 +1674,13 @@
                 `;
             }
             
-            elements.analysisResults.innerHTML = html;
+            analysisResults.innerHTML = html;
         }
 
         function updateAlgorithmResults(result) {
+            const algorithmResults = document.getElementById('algorithmResults');
+            if (!algorithmResults) return;
+            
             let html = '';
             
             if (result.error) {
@@ -1784,7 +1705,7 @@
                 `;
             }
             
-            elements.algorithmResults.innerHTML = html;
+            algorithmResults.innerHTML = html;
         }
 
         function formatMetricName(key) {
@@ -1824,7 +1745,10 @@
 
         function togglePerformanceMonitor() {
             perfMonitorVisible = !perfMonitorVisible;
-            elements.performanceOverlay.classList.toggle('visible', perfMonitorVisible);
+            const performanceOverlay = document.getElementById('performanceOverlay');
+            if (performanceOverlay) {
+                performanceOverlay.classList.toggle('visible', perfMonitorVisible);
+            }
             
             if (perfMonitorVisible) {
                 updatePerformanceDisplay();
@@ -1836,8 +1760,11 @@
             const cpuUsage = Math.random() * 60 + 20; // 20-80%
             const gpuUsage = performanceData.gpuAccelerated ? Math.random() * 40 + 30 : 0; // 30-70% or 0
             
-            document.getElementById('cpuBar').style.height = cpuUsage + '%';
-            document.getElementById('gpuBar').style.height = gpuUsage + '%';
+            const cpuBar = document.getElementById('cpuBar');
+            const gpuBar = document.getElementById('gpuBar');
+            
+            if (cpuBar) cpuBar.style.height = cpuUsage + '%';
+            if (gpuBar) gpuBar.style.height = gpuUsage + '%';
         }
 
         // PDF Report Generation
@@ -1880,24 +1807,36 @@
 
         // Modal functions
         function openSignatureAnalysis() {
-            document.getElementById('signatureModal').classList.add('active');
-            
-            if (currentImage) {
-                const canvas = document.getElementById('signatureCanvas');
-                displayImage(currentImage, canvas);
+            const signatureModal = document.getElementById('signatureModal');
+            if (signatureModal) {
+                signatureModal.classList.add('active');
+                
+                if (currentImage) {
+                    const canvas = document.getElementById('signatureCanvas');
+                    displayImage(currentImage, canvas);
+                }
             }
         }
 
         function closeSignatureModal() {
-            document.getElementById('signatureModal').classList.remove('active');
+            const signatureModal = document.getElementById('signatureModal');
+            if (signatureModal) {
+                signatureModal.classList.remove('active');
+            }
         }
 
         function openComparison() {
-            document.getElementById('comparisonModal').classList.add('active');
+            const comparisonModal = document.getElementById('comparisonModal');
+            if (comparisonModal) {
+                comparisonModal.classList.add('active');
+            }
         }
 
         function closeComparisonModal() {
-            document.getElementById('comparisonModal').classList.remove('active');
+            const comparisonModal = document.getElementById('comparisonModal');
+            if (comparisonModal) {
+                comparisonModal.classList.remove('active');
+            }
         }
 
         function selectSignatureMode() {
@@ -1906,7 +1845,9 @@
 
         function clearSignatureSelection() {
             const rect = document.getElementById('signatureRect');
-            rect.style.display = 'none';
+            if (rect) {
+                rect.style.display = 'none';
+            }
         }
 
         function analyzeSignature() {
@@ -1917,57 +1858,74 @@
             alert('Karşılaştırma analizi başlatıldı!');
         }
 
-        // Initialize when page loads - Fixed version
+        // DÜZELT İLMİŞ INİTİALİZATİON - Fixed version
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📄 DOM yüklendi');
+            console.log('📄 DOM Content Loaded');
             
-            // Önce UI initialize et
+            // First initialize the UI
             initializeUI();
             
-            // Event Listeners'ı güvenli şekilde ekle
+            // Then add event listeners with proper delay and null checks
             setTimeout(() => {
                 console.log('🔧 Event listeners ekleniyor...');
                 
-                if (elements && elements.imageInput) {
-                    elements.imageInput.addEventListener('change', handleImageUpload);
+                // Image input listener
+                const imageInput = document.getElementById('imageInput');
+                if (imageInput) {
+                    imageInput.addEventListener('change', handleImageUpload);
                     console.log('✅ Image input listener eklendi');
-                }
-                if (elements && elements.perfToggle) {
-                    elements.perfToggle.addEventListener('click', togglePerformanceMonitor);
-                }
-                
-                // Algorithm button event listeners
-                if (elements && elements.otsuBtn) {
-                    elements.otsuBtn.addEventListener('click', () => runAnalysis('otsu'));
-                }
-                if (elements && elements.kmeansBtn) {
-                    elements.kmeansBtn.addEventListener('click', () => runAnalysis('kmeans'));
-                }
-                if (elements && elements.ssimBtn) {
-                    elements.ssimBtn.addEventListener('click', () => runAnalysis('ssim'));
-                }
-                if (elements && elements.claheBtn) {
-                    elements.claheBtn.addEventListener('click', () => runAnalysis('clahe'));
-                }
-                if (elements && elements.advancedElaBtn) {
-                    elements.advancedElaBtn.addEventListener('click', () => runAnalysis('advancedELA'));
+                } else {
+                    console.error('❌ imageInput bulunamadı');
                 }
                 
-                // Header button event listeners  
-                if (elements && elements.generateReportBtn) {
-                    elements.generateReportBtn.addEventListener('click', generatePDFReport);
-                }
-                if (elements && elements.signatureAnalysisBtn) {
-                    elements.signatureAnalysisBtn.addEventListener('click', openSignatureAnalysis);
-                }
-                if (elements && elements.compareAllBtn) {
-                    elements.compareAllBtn.addEventListener('click', openComparison);
+                // Performance toggle
+                const perfToggle = document.getElementById('perfToggle');
+                if (perfToggle) {
+                    perfToggle.addEventListener('click', togglePerformanceMonitor);
+                    console.log('✅ Performance toggle listener eklendi');
                 }
                 
-                console.log('🚀 Forensic Analyzer v4.0 Standalone başlatıldı - FIXED!');
-            }, 200);
+                // Algorithm button listeners
+                const algorithmButtons = [
+                    { id: 'otsuBtn', algorithm: 'otsu' },
+                    { id: 'kmeansBtn', algorithm: 'kmeans' },
+                    { id: 'ssimBtn', algorithm: 'ssim' },
+                    { id: 'claheBtn', algorithm: 'clahe' },
+                    { id: 'advancedElaBtn', algorithm: 'advancedELA' }
+                ];
+                
+                algorithmButtons.forEach(({ id, algorithm }) => {
+                    const btn = document.getElementById(id);
+                    if (btn) {
+                        btn.addEventListener('click', () => runAnalysis(algorithm));
+                        console.log(`✅ ${id} listener eklendi`);
+                    } else {
+                        console.warn(`⚠️ ${id} bulunamadı`);
+                    }
+                });
+                
+                // Header button listeners
+                const headerButtons = [
+                    { id: 'generateReportBtn', func: generatePDFReport },
+                    { id: 'signatureAnalysisBtn', func: openSignatureAnalysis },
+                    { id: 'compareAllBtn', func: openComparison }
+                ];
+                
+                headerButtons.forEach(({ id, func }) => {
+                    const btn = document.getElementById(id);
+                    if (btn) {
+                        btn.addEventListener('click', func);
+                        console.log(`✅ ${id} listener eklendi`);
+                    } else {
+                        console.warn(`⚠️ ${id} bulunamadı`);
+                    }
+                });
+                
+                console.log('🚀 Forensic Analyzer v4.0 Standalone TAMAMEN HAZIR!');
+                
+            }, 300); // Delay increased to ensure all elements are ready
         });
 
     </script>
 </body>
-</html> 
+</html>
